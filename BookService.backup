@@ -1,0 +1,145 @@
+
+package com.example.library.service;
+
+import com.example.library.entity.Book;
+import com.example.library.entity.Borrow;
+import com.example.library.exception.BusinessException;
+import com.example.library.exception.ResourceNotFoundException;
+import com.example.library.repository.BookRepository;
+import com.example.library.repository.BorrowRepository;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Locale;
+
+@Service
+@RequiredArgsConstructor
+public class BorrowService {
+
+    private final BorrowRepository borrowRepository;
+    private final BookRepository bookRepository;
+
+    @Transactional(readOnly = true)
+    public List<Borrow> findActiveBorrows() {
+        return borrowRepository
+                .findByReturnDateIsNullOrderByDueDateAsc();
+    }
+
+    @Transactional
+    public Borrow borrowBook(Borrow borrow) {
+
+        if (borrow == null ||
+                borrow.getBook() == null ||
+                borrow.getBook().getId() == null) {
+            throw new BusinessException(
+                    "Vui lòng chọn sách cần mượn!"
+            );
+        }
+
+        Long bookId = borrow.getBook().getId();
+
+        Book book = bookRepository.findByIdForUpdate(bookId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Không tìm thấy sách!"
+                        )
+                );
+
+        if (book.getQuantity() == null ||
+                book.getQuantity() <= 0) {
+            throw new BusinessException(
+                    "Sách đã hết, không thể mượn!"
+            );
+        }
+
+        if (borrow.getBorrowerName() == null ||
+                borrow.getBorrowerName().isBlank()) {
+            throw new BusinessException(
+                    "Tên người mượn không được để trống!"
+            );
+        }
+
+        String email = borrow.getEmail();
+
+        if (email == null || email.isBlank()) {
+            throw new BusinessException(
+                    "Email không được để trống!"
+            );
+        }
+
+        email = email.trim().toLowerCase(Locale.ROOT);
+
+        if (!email.matches(
+                "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new BusinessException(
+                    "Email không đúng định dạng!"
+            );
+        }
+
+        if (borrowRepository
+                .existsByEmailIgnoreCaseAndBookIdAndReturnDateIsNull(
+                        email, bookId)) {
+            throw new BusinessException(
+                    "Email này đang mượn cuốn sách này và chưa trả!"
+            );
+        }
+
+        LocalDate today = LocalDate.now();
+
+        if (borrow.getDueDate() == null ||
+                borrow.getDueDate().isBefore(today)) {
+            throw new BusinessException(
+                    "Hạn trả phải từ hôm nay trở đi!"
+            );
+        }
+
+        borrow.setId(null);
+        borrow.setBook(book);
+        borrow.setBorrowerName(
+                borrow.getBorrowerName().trim()
+        );
+        borrow.setEmail(email);
+        borrow.setBorrowDate(today);
+        borrow.setReturnDate(null);
+
+        book.setQuantity(book.getQuantity() - 1);
+
+        bookRepository.save(book);
+        return borrowRepository.save(borrow);
+    }
+
+    @Transactional
+    public Borrow returnBook(Long borrowId) {
+
+        Borrow borrow = borrowRepository.findById(borrowId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Không tìm thấy phiếu mượn!"
+                        )
+                );
+
+        if (borrow.getReturnDate() != null) {
+            throw new BusinessException(
+                    "Phiếu mượn này đã được trả!"
+            );
+        }
+
+        Book book = bookRepository.findByIdForUpdate(
+                borrow.getBook().getId()
+        ).orElseThrow(() ->
+                new ResourceNotFoundException(
+                        "Không tìm thấy sách!"
+                )
+        );
+
+        borrow.setReturnDate(LocalDate.now());
+        book.setQuantity(book.getQuantity() + 1);
+
+        bookRepository.save(book);
+        return borrowRepository.save(borrow);
+    }
+}

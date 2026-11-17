@@ -1,0 +1,358 @@
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Quản lý sách - Thư viện</title>
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container py-4">
+
+    <!-- Tiêu đề -->
+    <div class="d-flex justify-content-between
+                align-items-center mb-4">
+
+        <h2 class="mb-0">Quản lý sách</h2>
+
+        <a th:href="@{/books/new}"
+           class="btn btn-primary">
+            + Thêm sách
+        </a>
+    </div>
+
+    <!-- Thông báo thành công -->
+    <div th:if="${successMessage}"
+         class="alert alert-success alert-dismissible fade show"
+         role="alert">
+
+        <span th:text="${successMessage}"></span>
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Đóng"></button>
+    </div>
+
+    <!-- Thông báo lỗi -->
+    <div th:if="${errorMessage}"
+         class="alert alert-danger alert-dismissible fade show"
+         role="alert">
+
+        <span th:text="${errorMessage}"></span>
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Đóng"></button>
+    </div>
+
+    <!-- Tìm kiếm và lọc -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+
+            <form th:action="@{/books}"
+                  method="get"
+                  class="row g-3 align-items-end">
+
+                <!-- Từ khóa -->
+                <div class="col-md-4">
+                    <label for="keyword" class="form-label">
+                        Tìm tên sách / Tác giả
+                    </label>
+
+                    <input type="text"
+                           id="keyword"
+                           name="keyword"
+                           class="form-control"
+                           th:value="${keyword}"
+                           placeholder="Nhập từ khóa...">
+                </div>
+
+                <!-- Thể loại -->
+                <div class="col-md-3">
+                    <label for="categoryId" class="form-label">
+                        Thể loại
+                    </label>
+
+                    <select id="categoryId"
+                            name="categoryId"
+                            class="form-select">
+
+                        <option value="">
+                            Tất cả thể loại
+                        </option>
+
+                        <option
+                                th:each="category : ${categories}"
+                                th:value="${category.id}"
+                                th:text="${category.name}"
+                                th:selected="${categoryId != null and categoryId == category.id}">
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Sắp xếp -->
+                <div class="col-md-3">
+                    <label for="sortField" class="form-label">
+                        Sắp xếp theo
+                    </label>
+
+                    <select id="sortField"
+                            name="sortField"
+                            class="form-select">
+
+                        <option value="id"
+                                th:selected="${sortField == 'id'}">
+                            Mới nhất
+                        </option>
+
+                        <option value="title"
+                                th:selected="${sortField == 'title'}">
+                            Tên sách
+                        </option>
+
+                        <option value="author"
+                                th:selected="${sortField == 'author'}">
+                            Tác giả
+                        </option>
+
+                        <option value="publishYear"
+                                th:selected="${sortField == 'publishYear'}">
+                            Năm xuất bản
+                        </option>
+
+                        <option value="quantity"
+                                th:selected="${sortField == 'quantity'}">
+                            Số lượng
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Thứ tự -->
+                <div class="col-md-2">
+                    <label for="sortDir" class="form-label">
+                        Thứ tự
+                    </label>
+
+                    <select id="sortDir"
+                            name="sortDir"
+                            class="form-select">
+
+                        <option value="asc"
+                                th:selected="${sortDir == 'asc'}">
+                            Tăng dần
+                        </option>
+
+                        <option value="desc"
+                                th:selected="${sortDir == 'desc'}">
+                            Giảm dần
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Nút -->
+                <div class="col-12">
+                    <button type="submit"
+                            class="btn btn-success">
+                        Tìm kiếm
+                    </button>
+
+                    <a th:href="@{/books}"
+                       class="btn btn-outline-secondary">
+                        Đặt lại
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách sách -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered
+                              table-hover align-middle">
+
+                    <thead class="table-dark">
+                    <tr>
+                        <th>Mã sách</th>
+                        <th>Tên sách</th>
+                        <th>Tác giả</th>
+                        <th>Năm XB</th>
+                        <th>Số lượng</th>
+                        <th>Thể loại</th>
+                        <th>Thao tác</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+
+                    <tr th:each="book : ${bookPage.content}">
+
+                        <td th:text="${book.code}"></td>
+
+                        <td th:text="${book.title}"></td>
+
+                        <td th:text="${book.author}"></td>
+
+                        <td th:text="${book.publishYear}"></td>
+
+                        <td>
+                            <span th:if="${book.quantity > 0}"
+                                  class="badge bg-success"
+                                  th:text="${book.quantity}">
+                            </span>
+
+                            <span th:if="${book.quantity <= 0}"
+                                  class="badge bg-danger">
+                                Hết sách
+                            </span>
+                        </td>
+
+                        <td th:text="${book.category != null ? book.category.name : 'Chưa phân loại'}">
+                        </td>
+
+                        <td>
+                            <div class="d-flex gap-1 flex-wrap">
+
+                                <!-- Sửa -->
+                                <a th:href="@{/books/{id}/edit(id=${book.id})}"
+                                   class="btn btn-warning btn-sm">
+                                    Sửa
+                                </a>
+
+                                <!-- Mượn -->
+                                <a th:if="${book.quantity > 0}"
+                                   th:href="@{/borrows/new/{bookId}(bookId=${book.id})}"
+                                   class="btn btn-primary btn-sm">
+                                    Mượn
+                                </a>
+
+                                <button th:if="${book.quantity <= 0}"
+                                        type="button"
+                                        class="btn btn-secondary btn-sm"
+                                        disabled>
+                                    Hết sách
+                                </button>
+
+                                <!-- Xóa -->
+                                <form
+                                        th:action="@{/books/{id}/delete(id=${book.id})}"
+                                        method="post"
+                                        onsubmit="return confirm('Bạn có chắc chắn muốn xóa sách này?');">
+
+                                    <button type="submit"
+                                            class="btn btn-danger btn-sm">
+                                        Xóa
+                                    </button>
+                                </form>
+
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Không có dữ liệu -->
+                    <tr th:if="${bookPage.empty}">
+                        <td colspan="7"
+                            class="text-center text-muted py-4">
+                            Không tìm thấy sách phù hợp.
+                        </td>
+                    </tr>
+
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Tổng kết quả -->
+            <p class="text-muted">
+                Tổng số sách:
+                <strong th:text="${bookPage.totalElements}">
+                    0
+                </strong>
+            </p>
+
+            <!-- Phân trang -->
+            <nav th:if="${bookPage.totalPages > 1}">
+                <ul class="pagination justify-content-center flex-wrap">
+
+                    <!-- Trang trước -->
+                    <li class="page-item"
+                        th:classappend="${bookPage.first} ? 'disabled'">
+
+                        <a class="page-link"
+                           th:href="${bookPage.first} ? '#' : @{/books(
+                               page=${bookPage.number - 1},
+                               size=${bookPage.size},
+                               keyword=${keyword},
+                               categoryId=${categoryId},
+                               sortField=${sortField},
+                               sortDir=${sortDir}
+                           )}">
+                            Trước
+                        </a>
+                    </li>
+
+                    <!-- Số trang -->
+                    <li class="page-item"
+                        th:each="i : ${#numbers.sequence(0, bookPage.totalPages - 1)}"
+                        th:classappend="${i == bookPage.number} ? 'active'">
+
+                        <a class="page-link"
+                           th:href="@{/books(
+                               page=${i},
+                               size=${bookPage.size},
+                               keyword=${keyword},
+                               categoryId=${categoryId},
+                               sortField=${sortField},
+                               sortDir=${sortDir}
+                           )}"
+                           th:text="${i + 1}">
+                        </a>
+                    </li>
+
+                    <!-- Trang sau -->
+                    <li class="page-item"
+                        th:classappend="${bookPage.last} ? 'disabled'">
+
+                        <a class="page-link"
+                           th:href="${bookPage.last} ? '#' : @{/books(
+                               page=${bookPage.number + 1},
+                               size=${bookPage.size},
+                               keyword=${keyword},
+                               categoryId=${categoryId},
+                               sortField=${sortField},
+                               sortDir=${sortDir}
+                           )}">
+                            Sau
+                        </a>
+                    </li>
+
+                </ul>
+            </nav>
+
+        </div>
+    </div>
+
+</div>
+
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+</body>
+</html>

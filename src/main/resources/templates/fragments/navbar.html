@@ -1,0 +1,30 @@
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<nav th:fragment="navbar"
+     class="navbar navbar-dark bg-dark">
+  <div class="container d-flex align-items-center
+                justify-content-between">
+
+    <a class="navbar-brand" th:href="@{/books}">
+      Thư viện
+    </a>
+
+    <div class="d-flex flex-row gap-4">
+      <a class="nav-link text-white"
+         th:href="@{/books}">Sách</a>
+
+      <a class="nav-link text-white"
+         th:href="@{/categories}">Thể loại</a>
+
+      <a class="nav-link text-white"
+         th:href="@{/borrows}">Đang mượn</a>
+    </div>
+
+  </div>
+</nav>
+
+</body>
+</html>
